@@ -147,12 +147,11 @@ def astar(maze, start, end, heuristic):
             # Create new node
             new_node = Node(current_node, node_position)
 
-            if maze[new_node.position[0]][new_node.position[1]] != 'E':
-                maze[new_node.position[0]][new_node.position[1]] = '.'
-                print_maze(maze)
-                print()
-
-
+            # if maze[new_node.position[0]][new_node.position[1]] != 'E':
+            #     maze[new_node.position[0]][new_node.position[1]] = '.'
+            #     print_maze(maze)
+            #     #print()
+            
             # Append to the children list
             children.append(new_node)
 
@@ -175,7 +174,18 @@ def astar(maze, start, end, heuristic):
 
             # Add the child to the open list
             open_list.append(child)
-
+       
+        maze1=maze
+        path_1=[]
+        current = current_node
+        while current is not None:
+            path_1.append(current.position)
+            current = current.parent
+            print(current)
+        for step in path_1:
+            if step != start and step != end:
+                maze1[step[0]][step[1]] = '.'
+        print_maze(maze1)
 
 if __name__ == '__main__':
     maze = load_maze('maze2.txt')
