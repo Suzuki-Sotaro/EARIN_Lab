@@ -102,8 +102,8 @@ def astar(maze, start, end, heuristic):
     open_list.append(start_node)
 
     # Loop until you find the end
+    cnt = 0
     while len(open_list) > 0:
-
         # Get the current node
         current_node = open_list[0]
         current_index = 0
@@ -117,6 +117,7 @@ def astar(maze, start, end, heuristic):
         open_list.pop(current_index)
         closed_list.append(current_node)
 
+        """
         # when it found the goal
         if current_node == end_node:
             path = []
@@ -125,11 +126,11 @@ def astar(maze, start, end, heuristic):
                 path.append(current.position)
                 current = current.parent
             return path[::-1] # Return reversed path
-
+        """
         # when it hasn't found the goal, Generate children
         children = []
+        count = 0
         for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # searching in 4 directions
-
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
@@ -147,11 +148,24 @@ def astar(maze, start, end, heuristic):
             # Create new node
             new_node = Node(current_node, node_position)
 
-            # if maze[new_node.position[0]][new_node.position[1]] != 'E':
-            #     maze[new_node.position[0]][new_node.position[1]] = '.'
-            #     print_maze(maze)
-            #     #print()
-            
+            # when it found the goal
+            if new_node == end_node:
+                path = []
+                new = new_node
+                while new is not None:
+                    path.append(new.position)
+                    new = new.parent
+                return path[::-1]  # Return reversed path
+
+            if maze[new_node.position[0]][new_node.position[1]] != 'E' and maze[new_node.position[0]][new_node.position[1]] != '.':
+                cnt += 1
+                print("step ", cnt)
+                print("current node is ", new_node.position)
+                maze[new_node.position[0]][new_node.position[1]] = '.'
+                print_maze(maze)
+                print()
+
+
             # Append to the children list
             children.append(new_node)
 
@@ -174,18 +188,7 @@ def astar(maze, start, end, heuristic):
 
             # Add the child to the open list
             open_list.append(child)
-       
-        maze1=maze
-        path_1=[]
-        current = current_node
-        while current is not None:
-            path_1.append(current.position)
-            current = current.parent
-            print(current)
-        for step in path_1:
-            if step != start and step != end:
-                maze1[step[0]][step[1]] = '.'
-        print_maze(maze1)
+
 
 if __name__ == '__main__':
     maze = load_maze('maze2.txt')
@@ -205,6 +208,7 @@ if __name__ == '__main__':
     print_maze(maze)
 
     #Reset maze
+
     maze = load_maze('maze2.txt')
 
     print('\nSolving with Manhattan distance heuristic:')
