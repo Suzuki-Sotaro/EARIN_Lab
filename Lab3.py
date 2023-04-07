@@ -72,4 +72,34 @@ optimal_solution = evolutionary_strategy(mu, lambd, generations, x_range, y_rang
 optimization_time = time.time() - start_time
 
 print("Optimal solution:", optimal_solution)
+print(bukin_function(optimal_solution[0], optimal_solution[1]))
 print("Optimization time (excluding visualization):", optimization_time, "seconds")
+
+
+"""
+Parameters' explanation
+
+mu: This parameter represents the population size or the number of individuals in the population. 
+A larger population size generally increases the diversity of the solutions being explored, which can help in avoiding local optima. However, larger populations also increase the computational cost of the algorithm.
+
+lambd: This parameter represents the offspring size or the number of offspring generated in each generation. 
+Larger offspring sizes provide more potential solutions to be explored, but they also increase the computational cost of the algorithm.
+
+generations: This parameter represents the number of generations the algorithm will run for. 
+The termination criterion for the algorithm is based on the number of generations. A larger number of generations allows the algorithm to explore more solutions, but it also increases the optimization time.
+
+x_range and y_range: These parameters define the search space's bounds for the x and y coordinates. 
+It is essential to set these ranges so that the global minimum of the Bukin function lies within the search space.
+
+mutation_strength: This parameter determines the strength of the Gaussian mutation applied to the parent's coordinates. 
+A higher mutation strength allows the algorithm to explore more distant solutions but might cause it to overshoot the optimal solution. 
+A lower value will result in more focused exploration, but convergence might be slower.
+
+mutation_probability: This parameter controls the probability of mutation happening for each coordinate of the offspring. 
+A higher mutation probability results in more frequent mutations, increasing the exploration of the search space. 
+However, it might also cause the search to be more random, potentially increasing the optimization time.
+
+visualize: This is a boolean parameter that controls whether the optimization process is visualized or not. 
+If set to True, the population of each generation will be plotted, showing the convergence of the algorithm. 
+Visualization helps to understand the optimization process but might also slow down the program's execution. If set to False, the visualization will be disabled, and the program will run faster.
+"""
