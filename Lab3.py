@@ -73,24 +73,63 @@ def evolutionary_strategy(mu, lambd, generations, x_range, y_range, mutation_str
     return best_solution
 
 
-# Parameters
-mu = 50
-lambd = 100
+# # Parameters
+# mu = 50
+# lambd = 100
+# generations = 200
+# x_range = (-15, -5)
+# y_range = (-3, 3)
+# mutation_strength = 0.5
+# mutation_probability = 0.9
+# visualize = True
+
+import csv
+
+# Parameters to test
+mu_values = [10, 50, 100]
+lambd_values = [20, 100, 200]
+mutation_strength_values = [0.1, 0.5, 1.0]
+mutation_probability_values = [0.5, 0.9, 0.99]
 generations = 200
 x_range = (-15, -5)
 y_range = (-3, 3)
-mutation_strength = 0.5
-mutation_probability = 0.9
-visualize = True
 
-# Measure optimization time and optimize the Bukin function
-start_time = time.time()
-optimal_solution = evolutionary_strategy(mu, lambd, generations, x_range, y_range, mutation_strength, mutation_probability, visualize)
-optimization_time = time.time() - start_time
+# Disable visualization for parameter testing
+visualize = False
 
-# Output the results
-print("Optimal solution:", optimal_solution)
-print("Optimization time (excluding visualization):", optimization_time, "seconds")
+# CSV file to save results
+csv_file = "results.csv"
+
+with open(csv_file, mode='w', newline='') as file:
+    csv_writer = csv.writer(file)
+    # Write header row
+    csv_writer.writerow(['mu', 'lambd', 'mutation_strength', 'mutation_probability', 'optimal_solution_x', 'optimal_solution_y', 'optimization_time'])
+
+    for mu in mu_values:
+        for lambd in lambd_values:
+            for mutation_strength in mutation_strength_values:
+                for mutation_probability in mutation_probability_values:
+                    # Measure optimization time and optimize the Bukin function with the current parameter combination
+                    start_time = time.time()
+                    optimal_solution = evolutionary_strategy(mu, lambd, generations, x_range, y_range, mutation_strength, mutation_probability, visualize)
+                    optimization_time = time.time() - start_time
+
+                    # Write the result row
+                    csv_writer.writerow([mu, lambd, mutation_strength, mutation_probability, optimal_solution[0], optimal_solution[1], bukin_function(optimal_solution[0], optimal_solution[1]), optimization_time])
+                    print(f"Parameters: mu={mu}, lambd={lambd}, mutation_strength={mutation_strength}, mutation_probability={mutation_probability}")
+                    print("Optimal solution:", optimal_solution)
+                    print("Optimization time (excluding visualization):", optimization_time, "seconds")
+                    print("----------------------------------------------------")
+
+
+# # Measure optimization time and optimize the Bukin function
+# start_time = time.time()
+# optimal_solution = evolutionary_strategy(mu, lambd, generations, x_range, y_range, mutation_strength, mutation_probability, visualize)
+# optimization_time = time.time() - start_time
+
+# # Output the results
+# print("Optimal solution:", optimal_solution)
+# print("Optimization time (excluding visualization):", optimization_time, "seconds")
 
 
 
