@@ -143,6 +143,8 @@ def astar(maze, start, end, heuristic):
                 continue
             if maze[node_position[0]][node_position[1]] == 'S':
                 continue
+            # if maze[node_position[0]][node_position[1]] == '.':
+            #     continue
 
 
             # Create new node
