@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import argparse
 
 # Define the Bukin function
 def bukin_function(x, y):
@@ -85,7 +86,7 @@ def evolutionary_strategy(mu, lambd, generations, x_range, y_range, mutation_str
 
 import csv
 
-# Parameters to test
+# Option-1 Parameters to test
 mu_values = [10, 50, 100]
 lambd_values = [20, 100, 200]
 mutation_strength_values = [0.1, 0.5, 1.0]
@@ -93,17 +94,43 @@ mutation_probability_values = [0.5, 0.9, 0.99]
 generations = 200
 x_range = (-15, -5)
 y_range = (-3, 3)
-
 # Disable visualization for parameter testing
 visualize = False
+
+# Option-2 Parse terminal arguments
+parser = argparse.ArgumentParser(description='Evolutionary Strategy Optimization for the Bukin Function')
+parser.add_argument('--mu', type=int, default=50, help='Number of parents (default: 50)')
+parser.add_argument('--lambd', type=int, default=100, help='Number of offspring (default: 100)')
+parser.add_argument('--generations', type=int, default=200, help='Number of generations (default: 200)')
+parser.add_argument('--x_min', type=float, default=-15, help='Minimum x value for search space (default: -15)')
+parser.add_argument('--x_max', type=float, default=-5, help='Maximum x value for search space (default: -5)')
+parser.add_argument('--y_min', type=float, default=-3, help='Minimum y value for search space (default: -3)')
+parser.add_argument('--y_max', type=float, default=3, help='Maximum y value for search space (default: 3)')
+parser.add_argument('--mutation_strength', type=float, default=0.5, help='Mutation strength (default: 0.5)')
+parser.add_argument('--mutation_probability', type=float, default=0.9, help='Mutation probability (default: 0.9)')
+parser.add_argument('--visualize', action='store_true', help='Enable visualization (default: False)')
+args = parser.parse_args()
+mu = args.mu
+lambd = args.lambd
+generations = args.generations
+x_range = (args.x_min, args.x_max)
+y_range = (args.y_min, args.y_max)
+mutation_strength = args.mutation_strength
+mutation_probability = args.mutation_probability
+visualize = args.visualize
+# Example
+# python main.py --mu 50 --lambd 100 --generations 200 --x_min -15 --x_max -5 --y_min -3 --y_max 3 --mutation_strength 0.5 --mutation_probability 0.9
+
 
 # CSV file to save results
 csv_file = "results.csv"
 
+results = []
+
 with open(csv_file, mode='w', newline='') as file:
     csv_writer = csv.writer(file)
     # Write header row
-    csv_writer.writerow(['mu', 'lambd', 'mutation_strength', 'mutation_probability', 'optimal_solution_x', 'optimal_solution_y', 'optimization_time'])
+    csv_writer.writerow(['mu', 'lambd', 'mutation_strength', 'mutation_probability', 'optimal_solution_x', 'optimal_solution_y', 'bukin_function(optimal_solution[0], optimal_solution[1])', 'optimization_time'])
 
     for mu in mu_values:
         for lambd in lambd_values:
@@ -120,6 +147,14 @@ with open(csv_file, mode='w', newline='') as file:
                     print("Optimal solution:", optimal_solution)
                     print("Optimization time (excluding visualization):", optimization_time, "seconds")
                     print("----------------------------------------------------")
+                    
+                    # Calculate the fitness value of the optimal solution
+                    fitness_value = bukin_function(optimal_solution[0], optimal_solution[1])
+
+                    # Store the result in the results list
+                    result = {'mu': mu, 'lambd': lambd, 'mutation_strength': mutation_strength, 'mutation_probability': mutation_probability,
+                              'optimal_solution': optimal_solution, 'fitness_value': fitness_value, 'optimization_time': optimization_time}
+                    results.append(result)
 
 
 # # Measure optimization time and optimize the Bukin function
@@ -130,6 +165,17 @@ with open(csv_file, mode='w', newline='') as file:
 # # Output the results
 # print("Optimal solution:", optimal_solution)
 # print("Optimization time (excluding visualization):", optimization_time, "seconds")
+
+# Sort the results list based on fitness_value
+sorted_results = sorted(results, key=lambda x: x['fitness_value'])
+
+# Print the best result (lowest fitness value)
+best_result = sorted_results[0]
+print("Best Result:")
+print(f"Parameters: mu={best_result['mu']}, lambd={best_result['lambd']}, mutation_strength={best_result['mutation_strength']}, mutation_probability={best_result['mutation_probability']}")
+print("Optimal solution:", best_result['optimal_solution'])
+print("Fitness value:", best_result['fitness_value'])
+print("Optimization time (excluding visualization):", best_result['optimization_time'], "seconds")
 
 
 
