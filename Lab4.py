@@ -1,9 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.svm import SVR
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 # Load the dataset
@@ -18,6 +18,11 @@ data['Genre'] = label_encoder.fit_transform(data['Genre'])
 # Handle missing values
 data['Time_taken'].fillna(data['Time_taken'].mean(), inplace=True)
 
+# Convert Critic_rating into discrete categories
+bins = [0, 3, 6, 10]
+labels = ['Low', 'Medium', 'High']
+data['Critic_rating'] = pd.cut(data['Critic_rating'], bins=bins, labels=labels)
+
 # Define the feature matrix and target variable
 X = data.drop(columns=['Critic_rating'])
 y = data['Critic_rating']
@@ -30,26 +35,26 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# Method 1: Linear Regression
-linear_regression = LinearRegression()
-linear_regression.fit(X_train, y_train)
-y_pred_lr = linear_regression.predict(X_test)
+# Method 1: Logistic Regression
+logistic_regression = LogisticRegression()
+logistic_regression.fit(X_train, y_train)
+y_pred_lr = logistic_regression.predict(X_test)
 
-# Method 2: Support Vector Machine Regression
-svm_regression = SVR(kernel='linear')
-svm_regression.fit(X_train, y_train)
-y_pred_svr = svm_regression.predict(X_test)
+# Method 2: Support Vector Machine Classification
+svm_classifier = SVC(kernel='linear')
+svm_classifier.fit(X_train, y_train)
+y_pred_svm = svm_classifier.predict(X_test)
 
 # Evaluate the performance
-mse_lr = mean_squared_error(y_test, y_pred_lr)
-mse_svr = mean_squared_error(y_test, y_pred_svr)
-r2_lr = r2_score(y_test, y_pred_lr)
-r2_svr = r2_score(y_test, y_pred_svr)
+accuracy_lr = accuracy_score(y_test, y_pred_lr)
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+report_lr = classification_report(y_test, y_pred_lr)
+report_svm = classification_report(y_test, y_pred_svm)
 
-print(f"Linear Regression - Mean Squared Error: {mse_lr}, R-squared: {r2_lr}")
-print(f"Support Vector Regression - Mean Squared Error: {mse_svr}, R-squared: {r2_svr}")
+print(f"Logistic Regression - Accuracy: {accuracy_lr}\nClassification Report:\n{report_lr}")
+print(f"Support Vector Machine Classifier - Accuracy: {accuracy_svm}\nClassification Report:\n{report_svm}")
 
-if r2_lr > r2_svr:
-    print("Linear Regression is the better method.")
+if accuracy_lr > accuracy_svm:
+    print("Logistic Regression is the better method.")
 else:
-    print("Support Vector Regression is the better method.")
+    print("Support Vector Machine Classifier is the better method.")
