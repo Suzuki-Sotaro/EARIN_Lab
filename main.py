@@ -10,7 +10,6 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_selection import SelectKBest, mutual_info_regression, mutual_info_classif, RFE, SelectFromModel
 from sklearn.decomposition import PCA
 
-
 def load_and_preprocess_data():
     # Load the dataset
     data = pd.read_csv('variant3.csv')
@@ -25,14 +24,17 @@ def load_and_preprocess_data():
     data['Time_taken'].fillna(data['Time_taken'].mean(), inplace=True)
 
     # Remove unnecessary features
-    # Uncomment the line below if there are any unnecessary features to be removed
-    # data = data.drop(columns=['Unnecessary_feature_1', 'Unnecessary_feature_2'])
+    data = data.drop(columns=['Time_taken', 'twitter_hashtags', 'Num_multiplex'])
 
     # Generate new features from existing features
-    genre_success_rate = data.groupby('Genre')['Critic_rating'].mean().to_dict()
-    data['Genre_Success_Rate'] = data['Genre'].map(genre_success_rate)
+    rating_columns = ['Lead_Actor_rating', 'Lead_Actress_rating', 'Director_rating', 'Producer_rating', 'Critic_rating']
+    data['Total_Rating'] = data[rating_columns].sum(axis=1)
+    data['Avg_Rating'] = data[rating_columns].mean(axis=1)
+    data['Budget_per_Second'] = data['Budget'] / data['Length_in_Seconds']
+    data['Trailer_views_per_Day'] = data['Trailer_views'] / data['Days_till_trailer']
 
     return data
+
 
 
 def feature_selection(data, method='correlation', n_features=None):
