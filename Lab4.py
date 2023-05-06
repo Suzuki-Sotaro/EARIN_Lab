@@ -99,7 +99,7 @@ def classification_methods(X_train, X_test, y_train, y_test):
 
 print(f"Best Classification Model: {best_model}, Accuracy: {best_accuracy:.2f}")
 def predict_critic_rating(method):
-data = load_and_preprocess_data()
+    data = load_and_preprocess_data()
     if method == "classification":
         data = prepare_classification_data(data)
 
@@ -113,7 +113,7 @@ data = load_and_preprocess_data()
     else:
         raise ValueError("Invalid method. Choose 'regression' or 'classification'")
 if name == "main":
-print("Regression Results:")
-predict_critic_rating("regression")
-print("\nClassification Results:")
-predict_critic_rating("classification")
+    print("Regression Results:")
+    predict_critic_rating("regression")
+    print("\nClassification Results:")
+    predict_critic_rating("classification")
