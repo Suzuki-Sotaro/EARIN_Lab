@@ -7,6 +7,9 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, classification_report
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.feature_selection import SelectKBest, f_regression, mutual_info_regression
+from sklearn.decomposition import PCA
+from sklearn.model_selection import GridSearchCV
 
 
 def load_and_preprocess_data():
@@ -22,8 +25,53 @@ def load_and_preprocess_data():
     # Handle missing values
     data['Time_taken'].fillna(data['Time_taken'].mean(), inplace=True)
 
+    # Drop unnecessary columns
+    data.drop(columns=['Twitter_hastags', 'Num_multiplex'], inplace=True)
+
+    # Add new features
+    data['Total_Rating'] = data[['Lead_ Actor_Rating', 'Lead_Actress_rating', 'Director_rating', 'Producer_rating', 'Critic_rating']].sum(axis=1)
+    data['Avg_Rating'] = data[['Lead_ Actor_Rating', 'Lead_Actress_rating', 'Director_rating', 'Producer_rating', 'Critic_rating']].mean(axis=1)
+    data['Budget_per_Second'] = data['Budget'] / (data['Movie_length'] * 60)
+    data['Trailer_views_per_Day'] = data['Trailer_views'] / data['Time_taken']
+    
+    # Check for infinity and NaN values
+    inf_values = data.applymap(np.isinf)
+    nan_values = data.isnull()
+    problem_values = inf_values | nan_values
+    
+    # Print rows and columns with problematic values
+    print("Rows and columns with inf, -inf, or NaN values:")
+    for index, row in problem_values.iterrows():
+        for col, value in row.items():
+            if value:
+                print(f"Index: {index}, Column: {col}")
+    
+    # Check for infinity and replace with NaN if found
+    data.replace([np.inf, -np.inf], np.nan, inplace=True)
+
+    # Fill any NaN values with the mean of the column
+    data.fillna(data.mean(), inplace=True)
+
     return data
 
+
+def select_features(X, y, k=10):
+    # Select k best features based on mutual information
+    selector = SelectKBest(mutual_info_regression, k=k)
+    X_new = selector.fit_transform(X, y)
+
+    # Get the names of the selected features
+    selected_features = X.columns[selector.get_support()]
+
+    return X_new, selected_features
+
+
+def extract_features(X, n_components=2):
+    # Apply PCA to extract new features
+    pca = PCA(n_components=n_components)
+    X_new = pca.fit_transform(X)
+
+    return X_new
 
 def prepare_classification_data(data):
     bins = [0, 7, 8, 10]
@@ -32,9 +80,18 @@ def prepare_classification_data(data):
     return data
 
 
-def prepare_feature_matrix_and_target(data):
+
+def prepare_feature_matrix_and_target(data, feature_selection=True, feature_extraction=True):
     X = data.drop(columns=['Critic_rating'])
     y = data['Critic_rating']
+
+    if feature_selection:
+        X, selected_features = select_features(X, y)
+        print("Selected features:", selected_features)
+
+    if feature_extraction:
+        X = extract_features(X)
+    
     return X, y
 
 
@@ -43,12 +100,12 @@ def split_and_standardize_data(X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Standardize the data
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
+    if X_train.ndim > 1:
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
 
     return X_train, X_test, y_train, y_test
-
 
 def regression_methods(X_train, X_test, y_train, y_test):
     # Initialize models
@@ -59,16 +116,26 @@ def regression_methods(X_train, X_test, y_train, y_test):
         "XGBoost Regression": XGBRegressor()
     }
 
+    # Define parameter grids for each model
+    param_grids = {
+        "Linear Regression": {},
+        "Support Vector Regression": {'C': [0.1, 1, 10], 'epsilon': [0.1, 0.5, 1]},
+        "Random Forest Regression": {'n_estimators': [10, 50, 100], 'max_depth': [None, 10, 20]},
+        "XGBoost Regression": {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 10], 'learning_rate': [0.01, 0.1, 0.3]}
+    }
     r2_scores = {}
 
-    # Train and evaluate each model
+    # Train and evaluate each model with GridSearchCV
     for name, model in models.items():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+        grid_search = GridSearchCV(model, param_grids[name], cv=5, scoring='r2')
+        grid_search.fit(X_train, y_train)
+        best_model = grid_search.best_estimator_
+        y_pred = best_model.predict(X_test)
         mse = mean_squared_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
         r2_scores[name] = r2
-        print(f"{name} - Mean Squared Error: {mse}, R-squared: {r2}")
+        print(f"{name} - Best Parameters: {grid_search.best_params_}")
+        print(f"Mean Squared Error: {mse}, R-squared: {r2}")
 
     # Find the best regression method
     best_method = max(r2_scores, key=r2_scores.get)
@@ -83,7 +150,13 @@ def classification_methods(X_train, X_test, y_train, y_test):
         "Random Forest Classifier": RandomForestClassifier(),
         "XGBoost Classifier": XGBClassifier()
     }
-
+    param_grids = {
+        "Logistic Regression": {'C': [0.1, 1, 10]},
+        "Support Vector Machine Classifier": {'C': [0.1, 1, 10]},
+        "Random Forest Classifier": {'n_estimators': [10, 50, 100], 'max_depth': [None, 10, 20]},
+        "XGBoost Classifier": {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 10], 'learning_rate': [0.01, 0.1, 0.3]}
+        }
+                                                                                                          
     accuracies = {}
 
     # Train and evaluate each model
@@ -100,13 +173,14 @@ def classification_methods(X_train, X_test, y_train, y_test):
     print(f"The best classification method is: {best_method}")
 
 
-def predict_critic_rating(method='regression'):
+
+def predict_critic_rating(method='regression', feature_selection=True, feature_extraction=True):
     data = load_and_preprocess_data()
 
     if method == 'classification':
         data = prepare_classification_data(data)
 
-    X, y = prepare_feature_matrix_and_target(data)
+    X, y = prepare_feature_matrix_and_target(data, feature_selection=feature_selection, feature_extraction=feature_extraction)
     X_train, X_test, y_train, y_test = split_and_standardize_data(X, y)
 
     if method == 'regression':
@@ -122,3 +196,9 @@ def predict_critic_rating(method='regression'):
 # Example usage:
 predict_critic_rating('regression')  # For regression methods
 predict_critic_rating('classification')  # For classification methods
+
+
+
+def predict_critic_rating(method='regression'):
+    data = load_and_preprocess_data()
+
