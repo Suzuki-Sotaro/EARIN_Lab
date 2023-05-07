@@ -26,7 +26,7 @@ def load_and_preprocess_data():
     data['Time_taken'].fillna(data['Time_taken'].mean(), inplace=True)
 
     # Drop unnecessary columns
-    data.drop(columns=['Twitter_hastags', 'Num_multiplex'], inplace=True)
+    data.drop(columns=['Twitter_hastags'], inplace=True)
 
     # Add new features
     data['Total_Rating'] = data[['Lead_ Actor_Rating', 'Lead_Actress_rating', 'Director_rating', 'Producer_rating', 'Critic_rating']].sum(axis=1)
@@ -38,13 +38,6 @@ def load_and_preprocess_data():
     inf_values = data.applymap(np.isinf)
     nan_values = data.isnull()
     problem_values = inf_values | nan_values
-    
-    # Print rows and columns with problematic values
-    print("Rows and columns with inf, -inf, or NaN values:")
-    for index, row in problem_values.iterrows():
-        for col, value in row.items():
-            if value:
-                print(f"Index: {index}, Column: {col}")
     
     # Check for infinity and replace with NaN if found
     data.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -107,7 +100,7 @@ def split_and_standardize_data(X, y):
 
     return X_train, X_test, y_train, y_test
 
-def regression_methods(X_train, X_test, y_train, y_test):
+def regression_methods_with_gridsearch(X_train, X_test, y_train, y_test):
     # Initialize models
     models = {
         "Linear Regression": LinearRegression(),
@@ -115,34 +108,36 @@ def regression_methods(X_train, X_test, y_train, y_test):
         "Random Forest Regression": RandomForestRegressor(),
         "XGBoost Regression": XGBRegressor()
     }
-
-    # Define parameter grids for each model
-    param_grids = {
+    
+    # Define hyperparameter grids for each model
+    hyperparameters = {
         "Linear Regression": {},
-        "Support Vector Regression": {'C': [0.1, 1, 10], 'epsilon': [0.1, 0.5, 1]},
-        "Random Forest Regression": {'n_estimators': [10, 50, 100], 'max_depth': [None, 10, 20]},
-        "XGBoost Regression": {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 10], 'learning_rate': [0.01, 0.1, 0.3]}
+        "Support Vector Regression": {'C': [0.1, 1, 10], 'epsilon': [0.01, 0.1, 1]},
+        "Random Forest Regression": {'n_estimators': [10, 50, 100], 'max_depth': [None, 10, 30]},
+        "XGBoost Regression": {'n_estimators': [100, 200], 'learning_rate': [0.01, 0.1], 'max_depth': [3, 5]}
     }
+
     r2_scores = {}
 
-    # Train and evaluate each model with GridSearchCV
+    # Train and evaluate each model
     for name, model in models.items():
-        grid_search = GridSearchCV(model, param_grids[name], cv=5, scoring='r2')
+        grid_search = GridSearchCV(model, hyperparameters[name], scoring='r2', cv=5)
         grid_search.fit(X_train, y_train)
+        best_params = grid_search.best_params_
         best_model = grid_search.best_estimator_
+
         y_pred = best_model.predict(X_test)
         mse = mean_squared_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
         r2_scores[name] = r2
-        print(f"{name} - Best Parameters: {grid_search.best_params_}")
-        print(f"Mean Squared Error: {mse}, R-squared: {r2}")
+        print(f"{name} - Mean Squared Error: {mse}, R-squared: {r2}\nBest Parameters: {best_params}")
 
     # Find the best regression method
     best_method = max(r2_scores, key=r2_scores.get)
     print(f"The best regression method is: {best_method}")
 
 
-def classification_methods(X_train, X_test, y_train, y_test):
+def classification_methods_with_gridsearch(X_train, X_test, y_train, y_test):
     # Initialize models
     models = {
         "Logistic Regression": LogisticRegression(),
@@ -150,23 +145,29 @@ def classification_methods(X_train, X_test, y_train, y_test):
         "Random Forest Classifier": RandomForestClassifier(),
         "XGBoost Classifier": XGBClassifier()
     }
-    param_grids = {
+    
+    # Define hyperparameter grids for each model
+    hyperparameters = {
         "Logistic Regression": {'C': [0.1, 1, 10]},
         "Support Vector Machine Classifier": {'C': [0.1, 1, 10]},
-        "Random Forest Classifier": {'n_estimators': [10, 50, 100], 'max_depth': [None, 10, 20]},
-        "XGBoost Classifier": {'n_estimators': [50, 100, 200], 'max_depth': [3, 5, 10], 'learning_rate': [0.01, 0.1, 0.3]}
-        }
-                                                                                                          
+        "Random Forest Classifier": {'n_estimators': [10, 50, 100], 'max_depth': [None, 10, 30]},
+        "XGBoost Classifier": {'n_estimators': [100, 200], 'learning_rate': [0.01, 0.1], 'max_depth': [3, 5]}
+    }
+
     accuracies = {}
 
     # Train and evaluate each model
     for name, model in models.items():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+        grid_search = GridSearchCV(model, hyperparameters[name], scoring='accuracy', cv=5)
+        grid_search.fit(X_train, y_train)
+        best_params = grid_search.best_params_
+        best_model = grid_search.best_estimator_
+
+        y_pred = best_model.predict(X_test)
         accuracy = accuracy_score(y_test, y_pred)
-        report = classification_report(y_test, y_pred)
+        report = classification_report(y_test, y_pred, zero_division=1)
         accuracies[name] = accuracy
-        print(f"{name} - Accuracy: {accuracy}\nClassification Report:\n{report}")
+        print(f"{name} - Accuracy: {accuracy}\nClassification Report:\n{report}\nBest Parameters: {best_params}")
 
     # Find the best classification method
     best_method = max(accuracies, key=accuracies.get)
@@ -174,31 +175,26 @@ def classification_methods(X_train, X_test, y_train, y_test):
 
 
 
-def predict_critic_rating(method='regression', feature_selection=True, feature_extraction=True):
+def predict_critic_rating_with_gridsearch(method='regression', feature_selection=True, feature_extraction=True):
     data = load_and_preprocess_data()
-
     if method == 'classification':
         data = prepare_classification_data(data)
-
     X, y = prepare_feature_matrix_and_target(data, feature_selection=feature_selection, feature_extraction=feature_extraction)
     X_train, X_test, y_train, y_test = split_and_standardize_data(X, y)
-
+    
     if method == 'regression':
-        regression_methods(X_train, X_test, y_train, y_test)
+        regression_methods_with_gridsearch(X_train, X_test, y_train, y_test)
 
     elif method == 'classification':
-        classification_methods(X_train, X_test, y_train, y_test)
-
+        classification_methods_with_gridsearch(X_train, X_test, y_train, y_test)
+    
     else:
         print("Invalid method. Choose 'regression' or 'classification'.")
 
 
 # Example usage:
-predict_critic_rating('regression')  # For regression methods
-predict_critic_rating('classification')  # For classification methods
+predict_critic_rating_with_gridsearch('regression') # For regression methods with GridSearch
+predict_critic_rating_with_gridsearch('classification') # For classification methods with GridSearch
 
 
-
-def predict_critic_rating(method='regression'):
-    data = load_and_preprocess_data()
 
